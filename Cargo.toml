@@ -15,7 +15,6 @@ serde = { version = "1.0.*", features = ["derive"] }
 quick-xml = { version = "0.20.0", features = ["serialize"] }
 
 [dependencies.serenity]
+version = "0.9"
 default-features = false
 features = ["collector", "gateway", "builder", "standard_framework", "http", "model", "client", "framework", "utils", "rustls_backend"]
-git = "https://github.com/Headline/serenity"
-branch = "compiler"

@@ -39,7 +39,7 @@ pub struct Item {
     #[serde(rename = "content:encoded", default)]
     pub content_encoded : String,
     pub category : String,
-    #[serde(rename = "dc:creator", default)]
+    #[serde(rename = "creator", default)]
     pub author : String,
     pub guid : String
 }

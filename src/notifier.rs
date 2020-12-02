@@ -7,7 +7,7 @@ use std::thread::sleep;
 use crate::parser;
 use std::error::Error;
 use crate::cache::BotInfo;
-use crate::utls::discordhelpers::{build_amx_embed, manual_dispatch, build_sm_embed};
+use crate::utls::discordhelpers::*;
 use serenity::http::Http;
 extern crate serde;
 extern crate quick_xml;
@@ -41,7 +41,7 @@ pub fn start_listening(data: Arc<RwLock<TypeMap>>, http : Arc<Http>) {
                 if sm_cache.is_empty() {
                     sm_cache = data.channel.items;
                 } else {
-                    notify_on_new(& mut sm_cache, &data.channel.items, channel, false, http.clone()).await
+                    notify_on_new(& mut sm_cache, &data.channel.items, channel, false, http.clone()).await;
                 }
             }
 

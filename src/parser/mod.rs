@@ -29,7 +29,7 @@ pub struct Image {
     pub link : String
 }
 
-#[derive(Debug, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Item {
     pub title : String,
     pub link : String,
@@ -43,4 +43,8 @@ pub struct Item {
     pub author : String,
     pub guid : String
 }
-
+impl PartialEq for Item {
+    fn eq(&self, other: &Self) -> bool {
+        self.link == other.link
+    }
+}

@@ -49,10 +49,10 @@ pub fn build_amx_embed(data : parser::Item) -> CreateEmbed {
     let mut embed = CreateEmbed::default();
     embed.color(COLOR_AMX);
     embed.title("New AMX Plugin Posted:");
+    embed.thumbnail(ICON_NOTIFY);
     embed.field("Title", data.title, false);
     embed.field("Author", data.author, false);
     embed.field("Link", format!("[Click Here]({})", data.link), false);
-    embed.thumbnail(ICON_NOTIFY);
     embed
 }
 
@@ -60,9 +60,9 @@ pub fn build_sm_embed(data : parser::Item) -> CreateEmbed {
     let mut embed = CreateEmbed::default();
     embed.color(COLOR_SM);
     embed.title("New SM Plugin Posted:");
+    embed.thumbnail(ICON_NOTIFY);
     embed.field("Title", data.title, false);
     embed.field("Author", data.author, false);
     embed.field("Link", format!("[Click Here]({})", data.link), false);
-    embed.thumbnail(ICON_NOTIFY);
     embed
 }

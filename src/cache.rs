@@ -22,6 +22,10 @@ pub async fn fill(
     // Lets map some common things in BotInfo
     let mut map = HashMap::<&str, String>::new();
     map.insert("PLUGIN_CHANNEL", env::var("PLUGIN_CHANNEL")?);
+    map.insert("SOURCEMOD_DIR", env::var("SOURCEMOD_DIR")?);
+    map.insert("DEPOT_DIR", env::var("DEPOT_DIR")?);
+    map.insert("DOWNLOADS_DIR", env::var("DOWNLOADS_DIR")?);
+
     map.insert("BOT_PREFIX", String::from(prefix));
     map.insert("BOT_ID", id.to_string());
     data.insert::<BotInfo>(Arc::new(tokio::sync::RwLock::new(map)));

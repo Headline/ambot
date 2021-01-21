@@ -19,11 +19,11 @@ extern crate pretty_env_logger;
 
 /** Command Registration **/
 use crate::commands::{
-    help::*, ping::*,
+    help::*, ping::*, gdc::*,
 };
 
 #[group]
-#[commands(ping, help)]
+#[commands(ping, help, gdc)]
 struct General;
 
 /** Spawn bot **/

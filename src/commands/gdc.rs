@@ -67,7 +67,7 @@ pub async fn gdc(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         Ok(mut child) => {
             let wait = child.wait();
             if wait.is_err() {
-                update_msg(&msg.author.tag(), & mut message, &ctx, &format!("SourceMod pull failed! (git exited with {})", wait.err().unwrap()), & mut log).await;
+                update_msg(&msg.author.tag(), & mut message, &ctx, &format!("SourceMod pull failed! (git exited with {})", wait.err().unwrap()), & mut log).await
             }
         }
         Err(e) => {
@@ -75,8 +75,8 @@ pub async fn gdc(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         }
     }
 
+    update_msg(&msg.author.tag(), & mut message, &ctx, &format!("Downloading appid '{}'", appid), & mut log).await;
     let gdc = GDCManager::new(appid, sourcemod_dir, downloads_dir, depot_dir);
-
     match gdc.download_game().await {
         Ok(t) => {
             if !t.success() {

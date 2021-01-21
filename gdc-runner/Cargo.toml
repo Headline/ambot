@@ -1,0 +1,15 @@
+[package]
+name = "gdcrunner"
+version = "0.1.0"
+authors = ["Michael Flaherty <michaelwflaherty@me.com>"]
+edition = "2018"
+[lib]
+name = "gdcrunner"
+path = "src/lib.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tokio = { version = "1.0.0", features = ["full"] }
+clap = "3.0.0-beta.2"
+walkdir = "2.3"

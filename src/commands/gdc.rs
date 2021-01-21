@@ -12,6 +12,7 @@ use gdcrunner::GDCManager;
 use crate::utls::discordhelpers;
 use crate::cache::BotInfo;
 use crate::utls::constants::{ICON_GDC, COLOR_GDC};
+use std::process::{Command, Stdio};
 
 #[command]
 #[owners_only]
@@ -40,11 +41,12 @@ pub async fn gdc(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let depot_dir = info.get("DEPOT_DIR").unwrap();
 
     let mut log = Vec::new();
+
     let mut emb = CreateEmbed::default();
     emb.title("Gamedata Checker");
     emb.thumbnail(ICON_GDC);
     emb.color(COLOR_GDC);
-    log.push(format!("Downloading app id '{}'", appid));
+    log.push(String::from("Pulling latest sourcemod..."));
     emb.description(format!("```\n{}\n```", log.join("\n")));
     emb.footer(|f| f.text(format!("Requested by: {}", &msg.author.tag())));
 
@@ -52,6 +54,26 @@ pub async fn gdc(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let mut message = msg.channel_id
         .send_message(&ctx.http, |_| &mut emb_msg)
         .await?;
+
+    // grab latest sourcemod
+    let sourcemod_update = Command::new("git")
+        .current_dir(sourcemod_dir)
+        .arg("pull")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn();
+
+    match sourcemod_update {
+        Ok(mut child) => {
+            let wait = child.wait();
+            if wait.is_err() {
+                update_msg(&msg.author.tag(), & mut message, &ctx, &format!("SourceMod pull failed! (git exited with {})", wait.err().unwrap()), & mut log).await;
+            }
+        }
+        Err(e) => {
+            update_msg(&msg.author.tag(), & mut message, &ctx, &format!("SourceMod pull failed: {}", e), & mut log).await
+        }
+    }
 
     let gdc = GDCManager::new(appid, sourcemod_dir, downloads_dir, depot_dir);
 

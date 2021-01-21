@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fs::OpenOptions;
 
-use serenity::framework::standard::{macros::command, Args, CommandResult};
+use serenity::framework::standard::{macros::command, Args, CommandResult, CommandError};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 use serenity::builder::CreateEmbed;
@@ -11,12 +11,26 @@ use gdcrunner::GDCManager;
 
 use crate::utls::discordhelpers;
 use crate::cache::BotInfo;
+use crate::utls::constants::{ICON_GDC, COLOR_GDC};
 
 #[command]
 #[owners_only]
 pub async fn gdc(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 
-    let appid = args.parse::<i32>().unwrap();
+    if args.is_empty() {
+        return Err(CommandError::from(
+            "Please supply a game to execute gamedata checker on.\n\nExample: -gdc csgo",
+        ));
+    }
+    let app = args.parse::<String>().unwrap();
+
+    let appid = gdcrunner::appid_translator::get_appid(&app);
+    if appid == 0 {
+        return Err(CommandError::from(
+            "Invalid or unsupported target.",
+        ));
+    }
+
 
     let data = ctx.data.read().await;
     let info = data.get::<BotInfo>().unwrap().read().await;
@@ -26,6 +40,9 @@ pub async fn gdc(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let depot_dir = info.get("DEPOT_DIR").unwrap();
 
     let mut emb = CreateEmbed::default();
+    emb.title("Gamedata Checker");
+    emb.thumbnail(ICON_GDC);
+    emb.color(COLOR_GDC);
     emb.description(format!("Downloading app id '{}'", appid));
     emb.footer(|f| f.text(format!("Requested by: {}", &msg.author.tag())));
 
@@ -57,7 +74,6 @@ pub async fn gdc(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 
     build_results_embed(&mut message, ctx, &results).await;
     msg.channel_id.send_files(&ctx.http, vec!["output.log"], |f| {
-        f.content("GDC execution complete.");
         f
     }).await?;
 
@@ -66,6 +82,7 @@ pub async fn gdc(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 
 async fn build_results_embed(msg : &mut Message, http : &Context, results : &HashMap<String, std::result::Result<bool, GDCError>>) {
     let tag = msg.author.tag();
+    let text = msg.content.clone();
     msg.edit(http, |f| {
         f.embed(|e| {
             for (k, v) in results {
@@ -74,7 +91,10 @@ async fn build_results_embed(msg : &mut Message, http : &Context, results : &Has
                 }
             }
 
-            e.description("Execution completed.");
+            e.title("Gamedata Checker");
+            e.color(COLOR_GDC);
+            e.description(format!("{}\nExecution completed.", text));
+            e.thumbnail(ICON_GDC);
             e.footer(|f| f.text(format!("Requested by: {}", tag)));
             e
         })
@@ -82,9 +102,14 @@ async fn build_results_embed(msg : &mut Message, http : &Context, results : &Has
 }
 
 async fn update_msg(msg : &mut Message, http : &Context, text : &str) {
+    let old_text = msg.content.clone();
+
     let tag = msg.author.tag();
     msg.edit(http, |f| f.embed(|e| {
-        e.description(text);
+        e.title("Gamedata Checker");
+        e.description(format!("{}\n{}", old_text, text));
+        e.thumbnail(ICON_GDC);
+        e.color(COLOR_GDC);
         e.footer(|f| f.text(format!("Requested by: {}", tag)));
         e
     })).await.expect("Unable to edit message.")

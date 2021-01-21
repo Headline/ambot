@@ -6,7 +6,7 @@ use crate::downloader::GDCError;
 
 mod gdcrunner;
 pub mod downloader;
-mod appid_translator;
+pub mod appid_translator;
 
 
 pub struct GDCManager {

@@ -39,11 +39,13 @@ pub async fn gdc(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let downloads_dir = info.get("DOWNLOADS_DIR").unwrap();
     let depot_dir = info.get("DEPOT_DIR").unwrap();
 
+    let mut log = Vec::new();
     let mut emb = CreateEmbed::default();
     emb.title("Gamedata Checker");
     emb.thumbnail(ICON_GDC);
     emb.color(COLOR_GDC);
-    emb.description(format!("Downloading app id '{}'", appid));
+    log.push(format!("Downloading app id '{}'", appid));
+    emb.description(format!("```\n{}\n```", log.join("\n")));
     emb.footer(|f| f.text(format!("Requested by: {}", &msg.author.tag())));
 
     let mut emb_msg = discordhelpers::embed_message(emb);
@@ -56,15 +58,15 @@ pub async fn gdc(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     match gdc.download_game().await {
         Ok(t) => {
             if !t.success() {
-                update_msg(& mut message, &ctx, &format!("Exited with status code {}", t)).await
+                update_msg(&msg.author.tag(), & mut message, &ctx, &format!("Exited with status code {}", t), & mut log).await
             }
         }
         Err(e) => {
-            update_msg(& mut message, &ctx, &format!("Fatal error: {}", e)).await
+            update_msg(&msg.author.tag(), & mut message, &ctx, &format!("Fatal error: {}", e), & mut log).await
         }
     }
 
-    update_msg(& mut message, &ctx, "Download completed. Running gdc...").await;
+    update_msg(&msg.author.tag(), & mut message, &ctx, "Download completed. Running gdc...", & mut log).await;
     let mut file = OpenOptions::new()
         .write(true) // <--------- this
         .create(true)
@@ -72,7 +74,7 @@ pub async fn gdc(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         .unwrap();
     let results = gdc.check_gamedata(& mut file).await;
 
-    build_results_embed(&mut message, ctx, &results).await;
+    build_results_embed(&msg.author.tag(), &mut message, ctx, &results, & mut log).await;
     msg.channel_id.send_files(&ctx.http, vec!["output.log"], |f| {
         f
     }).await?;
@@ -80,9 +82,7 @@ pub async fn gdc(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     Ok(())
 }
 
-async fn build_results_embed(msg : &mut Message, http : &Context, results : &HashMap<String, std::result::Result<bool, GDCError>>) {
-    let tag = msg.author.tag();
-    let text = msg.content.clone();
+async fn build_results_embed(tag : &String, msg : &mut Message, http : &Context, results : &HashMap<String, std::result::Result<bool, GDCError>>, log : & mut Vec<String>) {
     msg.edit(http, |f| {
         f.embed(|e| {
             for (k, v) in results {
@@ -93,7 +93,8 @@ async fn build_results_embed(msg : &mut Message, http : &Context, results : &Has
 
             e.title("Gamedata Checker");
             e.color(COLOR_GDC);
-            e.description(format!("{}\nExecution completed.", text));
+            log.push(String::from("Execution completed."));
+            e.description(format!("```\n{}\n```", log.join("\n")));
             e.thumbnail(ICON_GDC);
             e.footer(|f| f.text(format!("Requested by: {}", tag)));
             e
@@ -101,13 +102,12 @@ async fn build_results_embed(msg : &mut Message, http : &Context, results : &Has
     }).await.expect("Unable to edit message.")
 }
 
-async fn update_msg(msg : &mut Message, http : &Context, text : &str) {
-    let old_text = msg.content.clone();
+async fn update_msg(tag : &String, msg : &mut Message, http : &Context, text : &str, log : & mut Vec<String>) {
 
-    let tag = msg.author.tag();
     msg.edit(http, |f| f.embed(|e| {
         e.title("Gamedata Checker");
-        e.description(format!("{}\n{}", old_text, text));
+        log.push(text.to_owned());
+        e.description(format!("```\n{}\n```", log.join("\n")));
         e.thumbnail(ICON_GDC);
         e.color(COLOR_GDC);
         e.footer(|f| f.text(format!("Requested by: {}", tag)));

@@ -6,6 +6,7 @@ use serenity::model::prelude::*;
 use serenity::prelude::*;
 use serenity::builder::CreateEmbed;
 
+use gdcrunner::gameinfo::*;
 use gdcrunner::downloader::GDCError;
 use gdcrunner::GDCManager;
 
@@ -25,12 +26,14 @@ pub async fn gdc(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     }
     let app = args.parse::<String>().unwrap();
 
-    let appid = gdcrunner::appid_translator::get_appid(&app);
-    if appid == 0 {
+    let cache = GameCache::new();
+    let game_option = cache.lookup_shortname(&app);
+    if game_option.is_none() {
         return Err(CommandError::from(
             "Invalid or unsupported target.",
         ));
     }
+    let game = game_option.unwrap().clone();
 
 
     let data = ctx.data.read().await;
@@ -75,8 +78,8 @@ pub async fn gdc(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         }
     }
 
-    update_msg(&msg.author.tag(), & mut message, &ctx, &format!("Downloading appid '{}'", appid), & mut log).await;
-    let gdc = GDCManager::new(appid, sourcemod_dir, downloads_dir, depot_dir);
+    update_msg(&msg.author.tag(), & mut message, &ctx, &format!("Downloading appid '{}'", game.appid), & mut log).await;
+    let gdc = GDCManager::new(game, sourcemod_dir, downloads_dir, depot_dir);
     match gdc.download_game().await {
         Ok(t) => {
             if !t.success() {

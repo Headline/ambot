@@ -1,11 +1,11 @@
-use crate::appid_translator::getapp_shortname;
 use std::process::{Command, ExitStatus, Stdio};
 use std::path::Path;
 use core::fmt;
+use crate::gameinfo::*;
 
 #[derive(Debug, Clone)]
 pub struct GDCError {
-    message : String
+    message : String,
 }
 impl GDCError {
     pub fn new(message : &str) -> GDCError {
@@ -22,30 +22,23 @@ impl fmt::Display for GDCError {
 
 pub struct DepotDownloader {
     downloads_dir : String,
+    game : Game,
 }
 
 impl DepotDownloader {
-    pub fn new(downloads_dir : &str) -> DepotDownloader {
+    pub fn new(downloads_dir : &str, game : Game) -> DepotDownloader {
         DepotDownloader {
-            downloads_dir : downloads_dir.to_owned()
+            downloads_dir : downloads_dir.to_owned(),
+            game
         }
     }
 
-    pub fn get_download_path(&self, appid : i32) -> String {
-        let shortname = getapp_shortname(appid);
-        if shortname != "unknown" {
-            Path::new(&self.downloads_dir).join(shortname).to_str().unwrap().to_owned()
-        }
-        else {
-            String::new()
-        }
+    pub fn get_download_path(&self) -> String {
+        Path::new(&self.downloads_dir).join(String::from(self.game.name)).to_str().unwrap().to_owned()
     }
 
-    pub async fn download(&self, appid : i32, depotdownloader_path : &str) -> Result<ExitStatus, GDCError> {
-        let download_directory = self.get_download_path(appid);
-        if download_directory.is_empty() {
-            return Err(GDCError::new("Unsupported appid"));
-        }
+    pub async fn download(&self,  depotdownloader_path : &str) -> Result<ExitStatus, GDCError> {
+        let download_directory = self.get_download_path();
 
         if std::fs::create_dir(&download_directory).is_err() {
             if !Path::new(&download_directory).exists() {
@@ -53,7 +46,7 @@ impl DepotDownloader {
             }
         }
 
-        let execution_result = DepotDownloader::spawn_process(appid, &download_directory, depotdownloader_path).await;
+        let execution_result = DepotDownloader::spawn_process(self.game.appid, &download_directory, depotdownloader_path).await;
         match execution_result {
             Ok(t) => Ok(t),
             Err(e) => Err(GDCError::new(&format!("{}", e)))

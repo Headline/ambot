@@ -19,7 +19,7 @@ extern crate pretty_env_logger;
 
 /** Command Registration **/
 use crate::commands::{
-    help::*, ping::*, gdc::*,
+    help::*, ping::*, gdc::*
 };
 
 #[group]

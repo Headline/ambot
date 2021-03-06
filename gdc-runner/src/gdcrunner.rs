@@ -40,10 +40,28 @@ impl GDCRunner {
         runner
     }
 
+    pub fn find_binary(&self, filename : &str) -> String {
+        for entry in WalkDir::new(&self.download_path)
+            .follow_links(true)
+            .into_iter()
+            .filter_map(|e| e.ok()) {
+            let f_name = entry.file_name().to_string_lossy();
+            if f_name == filename {
+                let str = entry.path().to_string_lossy().to_string();
+                println!("Found file: {}", str);
+
+                return str
+            }
+        }
+
+        println!("Unable to find {}", filename);
+        String::default()
+    }
     pub fn run(&self, output_file : &mut File) -> HashMap<String, Result<bool, GDCError>> {
         let cwd = env::current_dir().unwrap();
         let libpath1 = cwd.join(Path::new(&self.download_path).join(&self.game.gamedir).join("bin")).to_string_lossy().to_string();
         let libpath2 = cwd.join(Path::new(&self.download_path).join("bin")).to_string_lossy().to_string();
+
 
         let mut map = HashMap::new();
         for file in &self.gamedata_files {
@@ -56,13 +74,13 @@ impl GDCRunner {
                 .arg("-f")
                 .arg(&file)
                 .arg("-b")
-                .arg(&format!("{}/{}/bin/server.so", &self.download_path, &self.game.gamedir))
+                .arg(&self.find_binary("server.so"))
                 .arg("-w")
-                .arg(&format!("{}/{}/bin/server.dll", &self.download_path, &self.game.gamedir))
+                .arg(&self.find_binary("server.dll"))
                 .arg("-x")
-                .arg(&format!("{}/bin/engine.so", &self.download_path))
+                .arg(&self.find_binary("engine.so"))
                 .arg("-y")
-                .arg(&format!("{}/bin/engine.dll", &self.download_path))
+                .arg(&self.find_binary("engine.dll"))
                 .arg("-s")
                 .arg(&format!("{}/tools/gdc-psyfork/symbols.txt", &self.sourcemod))
                 .stdout(Stdio::piped())

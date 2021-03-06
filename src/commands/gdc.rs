@@ -103,7 +103,7 @@ pub async fn gdc(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     msg.channel_id.send_files(&ctx.http, vec!["output.log"], |f| {
         f
     }).await?;
-
+    std::fs::remove_file("output.log");
     Ok(())
 }
 

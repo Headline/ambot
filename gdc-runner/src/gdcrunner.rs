@@ -8,6 +8,14 @@ use walkdir::WalkDir;
 use crate::downloader::GDCError;
 use crate::gameinfo::*;
 
+
+#[derive(Debug)]
+pub struct GameData {
+    pub appid : i32,
+    pub url : String,
+    pub path : String
+}
+
 pub struct GDCRunner {
     sourcemod : String,
     gdc_location : String,
@@ -17,16 +25,12 @@ pub struct GDCRunner {
 }
 
 impl GDCRunner {
-    pub fn load(game : Game, sourcemod : &str, dl_path : &str) -> GDCRunner {
+    pub fn load(game : Game, sourcemod : &str, dl_path : &str, gamedata : Vec<GameData>) -> GDCRunner {
         // load gamedata
         let mut vec = Vec::new();
-        for entry in WalkDir::new(format!("{}/gamedata", sourcemod))
-            .follow_links(true)
-            .into_iter()
-            .filter_map(|e| e.ok()) {
-            let filename = entry.path().to_string_lossy().to_string();
-            if filename.contains(game.name) {
-                vec.push(filename);
+        for data in gamedata {
+            if !data.path.is_empty() {
+                vec.push(format!("{}/gamedata/{}", sourcemod, data.path))
             }
         }
 

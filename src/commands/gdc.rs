@@ -8,17 +8,19 @@ use serenity::builder::CreateEmbed;
 
 use gdcrunner::gameinfo::*;
 use gdcrunner::downloader::GDCError;
-use gdcrunner::GDCManager;
+use gdcrunner::{GDCManager};
 
 use crate::utls::discordhelpers;
-use crate::cache::BotInfo;
+use crate::cache::{BotInfo, Sqlite};
 use crate::utls::constants::{ICON_GDC, COLOR_GDC};
 use std::process::{Command, Stdio};
+use rusqlite::params;
+use gdcrunner::gdcrunner::GameData;
 
 #[command]
 #[owners_only]
+#[sub_commands(add, list, remove)]
 pub async fn gdc(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
-
     if args.is_empty() {
         return Err(CommandError::from(
             "Please supply a game to execute gamedata checker on.\n\nExample: -gdc csgo",
@@ -79,6 +81,7 @@ pub async fn gdc(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     }
 
     update_msg(&msg.author.tag(), & mut message, &ctx, &format!("Downloading appid '{}'", game.appid), & mut log).await;
+
     let gdc = GDCManager::new(game, sourcemod_dir, downloads_dir, depot_dir);
     match gdc.download_game().await {
         Ok(t) => {
@@ -97,13 +100,28 @@ pub async fn gdc(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         .create(true)
         .open("output.log")
         .unwrap();
-    let results = gdc.check_gamedata(& mut file).await;
+
+
+    let list : Vec<GameData> = {
+        let conn = data.get::<Sqlite>().unwrap().lock().await;
+        let mut stmt = conn.prepare("SELECT url, path FROM gamedata WHERE appid = ?")?;
+        let person_iter = stmt.query_map(params![game.appid], |row| {
+            Ok(GameData {
+                appid: game.appid,
+                url: row.get(0)?,
+                path: row.get(1)?,
+            })
+        })?;
+
+        person_iter.map(|p| p.unwrap()).collect()
+    };
+    let results = gdc.check_gamedata(& mut file, list).await;
 
     build_results_embed(&msg.author.tag(), &mut message, ctx, &results, & mut log).await;
     msg.channel_id.send_files(&ctx.http, vec!["output.log"], |f| {
         f
     }).await?;
-    std::fs::remove_file("output.log");
+    std::fs::remove_file("output.log")?;
     Ok(())
 }
 
@@ -138,4 +156,89 @@ async fn update_msg(tag : &String, msg : &mut Message, http : &Context, text : &
         e.footer(|f| f.text(format!("Requested by: {}", tag)));
         e
     })).await.expect("Unable to edit message.")
+}
+
+#[command]
+pub async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    if args.len() != 3 {
+        msg.reply(&ctx, "Invalid syntax: -gdc add <appid> <url OR path> <source>").await?;
+        return Ok(())
+    }
+
+    let appid = args.single::<i32>()?;
+    let src_type = args.single::<String>()?;
+    let src = args.single::<String>()?;
+
+    let data = ctx.data.read().await;
+    let conn = data.get::<Sqlite>().unwrap().lock().await;
+
+    if src_type == "url" {
+        conn.execute("INSERT INTO gamedata (appid, url, path) VALUES (?1, ?2, ?3)",
+        params![appid, src, ""])?;
+    }
+    else if src_type == "path" {
+        conn.execute("INSERT INTO gamedata (appid, url, path) VALUES (?1, ?2, ?3)",
+                     params![appid, "", src])?;
+    }
+    else {
+        msg.reply(&ctx, format!("Invalid source type: `{}`", src)).await?;
+        return Ok(())
+    }
+
+
+    Ok(())
+}
+
+#[command]
+pub async fn list(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
+    if args.len() != 1 {
+        msg.reply(&ctx, "Invalid syntax: -gdc list <appid>").await?;
+        return Ok(())
+    }
+
+    let appid = args.parse::<i32>()?;
+
+    let data = ctx.data.read().await;
+    let conn = data.get::<Sqlite>().unwrap().lock().await;
+
+    let list = {
+        let mut stmt = conn.prepare("SELECT url, path FROM gamedata WHERE appid = ?")?;
+        let person_iter = stmt.query_map(params![appid], |row| {
+            Ok(GameData {
+                appid,
+                url: row.get(0)?,
+                path: row.get(1)?,
+            })
+        })?;
+
+        let mut list = String::from(format!("Sources for {}\n", appid));
+        for person in person_iter {
+            let p = person.unwrap();
+            list.push_str(&format!(" - {}{}\n", p.url, p.path));
+        }
+        list
+    };
+    msg.reply(&ctx, format!("```\n{}\n```", list)).await?;
+    Ok(())
+}
+
+#[command]
+pub async fn remove(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    if args.len() != 2 {
+        msg.reply(&ctx, "Invalid syntax: -gdc remove <appid> <src>").await?;
+        return Ok(())
+    }
+
+    let appid = args.single::<i32>()?;
+    let src = args.single::<String>()?;
+
+    let data = ctx.data.read().await;
+    let conn = data.get::<Sqlite>().unwrap().lock().await;
+
+    {
+        let mut stmt = conn.prepare("DELETE FROM gamedata WHERE appid = ? AND (url = ? OR path = ?)")?;
+        stmt.execute(params![appid, src, src])?;
+    };
+    msg.reply(&ctx, "I probably removed what you wanted").await?;
+    Ok(())
 }

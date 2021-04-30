@@ -7,7 +7,7 @@ use walkdir::WalkDir;
 
 use crate::downloader::GDCError;
 use crate::gameinfo::*;
-
+use std::io::Write;
 
 #[derive(Debug)]
 pub struct GameData {
@@ -25,12 +25,28 @@ pub struct GDCRunner {
 }
 
 impl GDCRunner {
-    pub fn load(game : Game, sourcemod : &str, dl_path : &str, gamedata : Vec<GameData>) -> GDCRunner {
+    pub async fn load(game : Game, sourcemod : &str, dl_path : &str, gamedata : Vec<GameData>) -> GDCRunner {
         // load gamedata
         let mut vec = Vec::new();
         for data in gamedata {
             if !data.path.is_empty() {
                 vec.push(format!("{}/gamedata/{}", sourcemod, data.path))
+            }
+            else if !data.url.is_empty() {
+                let filename = data.url[data.url.rfind('/').unwrap()+1..].to_string();
+                let response = reqwest::get(&data.url).await;
+                if let Ok(r) = response {
+                    if let Ok(text) = r.bytes().await {
+                        if let Ok(mut file) = File::create(&filename) {
+                            let _ = file.write_all(&text);
+                        }
+                        let path = std::fs::canonicalize(filename).unwrap().to_string_lossy().to_string();
+                        vec.push(path);
+                    }
+                }
+            }
+            else {
+                panic!("Invalid entry for load gamedata discovered.");
             }
         }
 

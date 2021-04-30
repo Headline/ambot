@@ -33,7 +33,7 @@ impl GDCManager {
     }
 
     pub async fn check_gamedata(&self, output_file : &mut  File, gamedata : Vec<crate::gdcrunner::GameData>) -> HashMap<String, Result<bool, GDCError>> {
-        let runner = gdcrunner::GDCRunner::load(self.game, &self.sourcemod_dir, &self.downloads_dir, gamedata);
+        let runner = gdcrunner::GDCRunner::load(self.game, &self.sourcemod_dir, &self.downloads_dir, gamedata).await;
         runner.run(output_file)
     }
 }

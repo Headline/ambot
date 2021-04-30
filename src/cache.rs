@@ -38,7 +38,7 @@ pub async fn fill(
 
     let conn = Connection::open("sources.db")?;
     conn.execute("CREATE TABLE IF NOT EXISTS gamedata (
-	    appid INTEGER PRIMARY KEY,
+	    appid INTEGER,
 	    url TEXT NOT NULL,
 	    path TEXT NOT NULL
 	    );", []

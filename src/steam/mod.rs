@@ -65,3 +65,4 @@ pub fn start_polling<F: 'static, Fut>(data: Arc<RwLock<TypeMap>>, http : Arc<Cac
         }
     });
 }
+

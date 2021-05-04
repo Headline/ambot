@@ -37,10 +37,11 @@ impl GDCRunner {
                 let response = reqwest::get(&data.url).await;
                 if let Ok(r) = response {
                     if let Ok(text) = r.bytes().await {
-                        if let Ok(mut file) = File::create(&format!("gamedata/{}", &filename)) {
+                        let write_path = format!("gamedata/{}", &filename);
+                        if let Ok(mut file) = File::create(&write_path) {
                             let _ = file.write_all(&text);
                         }
-                        let path = std::fs::canonicalize(filename).unwrap().to_string_lossy().to_string();
+                        let path = std::fs::canonicalize(write_path).unwrap().to_string_lossy().to_string();
                         vec.push(path);
                     }
                 }

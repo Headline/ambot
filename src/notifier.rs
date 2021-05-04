@@ -2,7 +2,6 @@ use std::sync::{Arc};
 use tokio::sync::RwLock;
 
 use serenity::prelude::TypeMap;
-use std::thread::sleep;
 
 use crate::parser;
 use std::error::Error;
@@ -45,7 +44,7 @@ pub fn start_listening(data: Arc<RwLock<TypeMap>>, http : Arc<Http>) {
                 }
             }
 
-            sleep(core::time::Duration::new(120, 0));
+            tokio::time::delay_for(core::time::Duration::new(120, 0)).await;
         }
     });
 }
@@ -67,7 +66,7 @@ async fn notify_on_new(cache : & mut Vec<parser::Item>, new : &Vec<parser::Item>
         else {
             emb = build_sm_embed(x);
         }
-        manual_dispatch(http.clone(), channel.parse::<u64>().unwrap(), emb).await;
+        let _ = manual_dispatch(http.clone(), channel.parse::<u64>().unwrap(), emb).await;
     }
 }
 

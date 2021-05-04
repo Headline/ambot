@@ -43,7 +43,6 @@ pub async fn fill(
 	    path TEXT NOT NULL
 	    );", []
     )?;
-
     data.insert::<Sqlite>(Arc::new(tokio::sync::Mutex::new(conn)));
 
     Ok(())

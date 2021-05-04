@@ -20,6 +20,10 @@ impl GameCache {
         }
     }
 
+    pub fn get_ids(&self) -> Vec<i32> {
+        self.cache.iter().map(|p| p.appid).collect()
+    }
+
     pub fn lookup_shortname(&self, shortname : &str) -> Option<&Game> {
         self.cache.iter().find(|p| p.name == shortname)
     }

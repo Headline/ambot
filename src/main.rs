@@ -4,6 +4,7 @@ mod events;
 mod utls;
 mod notifier;
 mod parser;
+mod steam;
 
 use serenity::{
     client::bridge::gateway::GatewayIntents,
@@ -80,6 +81,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     cache::fill(client.data.clone(), &prefix, &bot_id).await?;
 
     notifier::start_listening(client.data.clone(), client.cache_and_http.http.clone());
+    //steam::start_polling(client.data.clone(), client.cache_and_http.clone(), commands::gdc::on_update);
+
     if let Err(why) = client.start_autosharded().await {
         error!("Client error: {:?}", why);
     }

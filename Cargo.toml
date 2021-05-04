@@ -6,7 +6,7 @@ authors = ["Michael Flaherty (Headline#9999)"]
 edition = "2018"
 
 [dependencies]
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "0.2", features = ["full", "blocking"] }
 reqwest = { version = "0.10" }
 dotenv = "0.15.0"
 log = "0.4"

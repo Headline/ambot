@@ -37,7 +37,7 @@ impl GDCRunner {
                 let response = reqwest::get(&data.url).await;
                 if let Ok(r) = response {
                     if let Ok(text) = r.bytes().await {
-                        if let Ok(mut file) = File::create(&filename) {
+                        if let Ok(mut file) = File::create(&format!("gamedata/{}", &filename)) {
                             let _ = file.write_all(&text);
                         }
                         let path = std::fs::canonicalize(filename).unwrap().to_string_lossy().to_string();

@@ -262,7 +262,7 @@ pub async fn on_update(data: Arc<RwLock<TypeMap>>, http : Arc<CacheAndHttp>, id 
     let mut log = Vec::new();
 
     let mut emb = CreateEmbed::default();
-    emb.title(format!("{} update detected", app.info.name));
+    emb.title(format!("{} update detected", app.common.name));
     emb.thumbnail(ICON_GDC);
     emb.color(COLOR_GDC);
     log.push(String::from("Pulling latest sourcemod..."));
@@ -276,6 +276,6 @@ pub async fn on_update(data: Arc<RwLock<TypeMap>>, http : Arc<CacheAndHttp>, id 
         .await
         .expect("Unable to send msg");
 
-    run_gdc(message, None, data.clone(), http.http.clone(), log, game).await;
+    let _ = run_gdc(message, None, data.clone(), http.http.clone(), log, game).await;
 
 }

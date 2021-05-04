@@ -44,16 +44,16 @@ pub fn start_polling<F: 'static, Fut>(data: Arc<RwLock<TypeMap>>, http : Arc<Cac
 {
     tokio::spawn(async move {
         let mut n = GameVersionManager::new();
+        let client = reqwest::Client::new();
+
         loop {
             let apps : Vec<String> = n.get_apps().iter().map(|&id| id.to_string()).collect();
 
             let apps_str = apps.join(",");
-            let endpoint = format!("127.0.0.1:4123/info?apps={}", apps_str);
+            let endpoint = format!("http://127.0.0.1:23455/info?apps={}", apps_str);
 
-            let client = reqwest::Client::new();
-            let res = client.get(&endpoint).send().await.unwrap();
-
-            let results = res.json::<PicsResponse>().await.unwrap();
+            let response = client.get(&endpoint).send().await.unwrap();
+            let results = response.json::<PicsResponse>().await.unwrap();
             for (k, v) in results.apps {
                 let id = k.parse::<u64>().unwrap();
                 if n.check_update(id, v.change_number) {

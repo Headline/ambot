@@ -4,7 +4,7 @@ use serde::*;
 
 #[derive(Clone, Debug, Deserialize, Default)]
 pub struct PicsResponse {
-    pub success : bool,
+    pub success : i32,
     pub apps: HashMap<String, App> // string is id
 }
 
@@ -12,10 +12,10 @@ pub struct PicsResponse {
 pub struct App {
     pub appid : String,
     pub change_number : u64,
-    pub info : Info
+    pub common : Common
 }
 
 #[derive(Clone, Debug, Deserialize, Default)]
-pub struct Info {
+pub struct Common {
     pub name : String
 }

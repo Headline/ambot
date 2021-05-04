@@ -74,7 +74,7 @@ impl GDCRunner {
             }
         }
 
-        if try_srv { // try again with srv background
+        if try_srv { // try again with srv suffix
             return self.find_binary(&filename.replace(".so", "_srv.so"), false)
         }
         else {
@@ -91,7 +91,7 @@ impl GDCRunner {
         let mut map = HashMap::new();
         for file in &self.gamedata_files {
             let child = Command::new(&self.gdc_location)
-                .env("LD_LIBRARY_PATH", format!("{}:{}", libpath2, libpath1))
+                .env("LD_LIBRARY_PATH", format!("{}:{}:/usr/lib", libpath2, libpath1))
                 .arg("-e")
                 .arg(&self.game.engine)
                 .arg("-g")

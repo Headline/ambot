@@ -9,10 +9,10 @@ use serenity::{
 
 use crate::utls::constants::*;
 use crate::parser;
+use serenity::prelude::SerenityError;
 
-
-pub async fn manual_dispatch(http: Arc<Http>, id: u64, emb: CreateEmbed) {
-    match serenity::model::id::ChannelId(id)
+pub async fn manual_dispatch(http: Arc<Http>, id: u64, emb: CreateEmbed) -> Result<Message, SerenityError> {
+    return match serenity::model::id::ChannelId(id)
         .send_message(&http, |m| {
             m.embed(|mut e| {
                 e.0 = emb.0;
@@ -21,8 +21,8 @@ pub async fn manual_dispatch(http: Arc<Http>, id: u64, emb: CreateEmbed) {
         })
         .await
     {
-        Ok(m) => m,
-        Err(e) => return error!("Unable to dispatch manually: {}", e),
+        Ok(m) => Ok(m),
+        Err(e) => Err(e),
     };
 }
 

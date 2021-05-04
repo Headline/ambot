@@ -64,7 +64,8 @@ impl DepotDownloader {
             .arg("files.txt")
             .arg("-dir")
             .arg(download_dir)
-            .stdout(Stdio::null())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
             .spawn();
 
         match child {

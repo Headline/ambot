@@ -5,11 +5,17 @@ use std::sync::Arc;
 
 use serenity::model::id::UserId;
 use std::error::Error;
+use rusqlite::{Connection, Result};
 
 /** Caching **/
 pub struct BotInfo;
 impl TypeMapKey for BotInfo {
     type Value = Arc<tokio::sync::RwLock<HashMap<&'static str, String>>>;
+}
+
+pub struct Sqlite;
+impl TypeMapKey for Sqlite {
+    type Value = Arc<tokio::sync::Mutex<Connection>>;
 }
 
 pub async fn fill(
@@ -29,6 +35,15 @@ pub async fn fill(
     map.insert("BOT_PREFIX", String::from(prefix));
     map.insert("BOT_ID", id.to_string());
     data.insert::<BotInfo>(Arc::new(tokio::sync::RwLock::new(map)));
+
+    let conn = Connection::open("sources.db")?;
+    conn.execute("CREATE TABLE IF NOT EXISTS gamedata (
+	    appid INTEGER,
+	    url TEXT NOT NULL,
+	    path TEXT NOT NULL
+	    );", []
+    )?;
+    data.insert::<Sqlite>(Arc::new(tokio::sync::Mutex::new(conn)));
 
     Ok(())
 }

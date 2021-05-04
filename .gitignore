@@ -2,3 +2,5 @@
 /.idea
 #Added by cargo
 /target
+
+sources.db

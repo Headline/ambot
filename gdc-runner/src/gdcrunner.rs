@@ -60,7 +60,7 @@ impl GDCRunner {
         runner
     }
 
-    pub fn find_binary(&self, filename : &str) -> String {
+    pub fn find_binary(&self, filename : &str, try_srv : bool) -> String {
         for entry in WalkDir::new(&self.download_path)
             .follow_links(true)
             .into_iter()
@@ -74,8 +74,13 @@ impl GDCRunner {
             }
         }
 
-        println!("Unable to find {}", filename);
-        String::default()
+        if try_srv { // try again with srv background
+            return self.find_binary(&filename.replace(".so", "_srv.so"), false)
+        }
+        else {
+            println!("Unable to find {}", filename);
+            return String::default()
+        }
     }
     pub fn run(&self, output_file : &mut File) -> HashMap<String, Result<bool, GDCError>> {
         let cwd = env::current_dir().unwrap();
@@ -94,13 +99,13 @@ impl GDCRunner {
                 .arg("-f")
                 .arg(&file)
                 .arg("-b")
-                .arg(&self.find_binary("server.so"))
+                .arg(&self.find_binary("server.so", true))
                 .arg("-w")
-                .arg(&self.find_binary("server.dll"))
+                .arg(&self.find_binary("server.dll", false))
                 .arg("-x")
-                .arg(&self.find_binary("engine.so"))
+                .arg(&self.find_binary("engine.so", true))
                 .arg("-y")
-                .arg(&self.find_binary("engine.dll"))
+                .arg(&self.find_binary("engine.dll", false))
                 .arg("-s")
                 .arg(&format!("{}/tools/gdc-psyfork/symbols.txt", &self.sourcemod))
                 .stdout(Stdio::piped())

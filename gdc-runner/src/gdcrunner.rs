@@ -61,6 +61,10 @@ impl GDCRunner {
     }
 
     pub fn find_binary(&self, filename : &str, try_srv : bool) -> String {
+        if try_srv { // try with srv suffix
+            return self.find_binary(&filename.replace(".so", "_srv.so"), false)
+        }
+
         for entry in WalkDir::new(&self.download_path)
             .follow_links(true)
             .into_iter()
@@ -74,14 +78,10 @@ impl GDCRunner {
             }
         }
 
-        if try_srv { // try again with srv suffix
-            return self.find_binary(&filename.replace(".so", "_srv.so"), false)
-        }
-        else {
-            println!("Unable to find {}", filename);
-            return String::default()
-        }
+        println!("Unable to find {}", filename);
+        return String::default()
     }
+
     pub fn run(&self, output_file : &mut File) -> HashMap<String, Result<bool, GDCError>> {
         let cwd = env::current_dir().unwrap();
         let libpath1 = cwd.join(Path::new(&self.download_path).join(&self.game.gamedir).join("bin")).to_string_lossy().to_string();

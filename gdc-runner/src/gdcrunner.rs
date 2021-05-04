@@ -62,7 +62,10 @@ impl GDCRunner {
 
     pub fn find_binary(&self, filename : &str, try_srv : bool) -> String {
         if try_srv { // try with srv suffix
-            return self.find_binary(&filename.replace(".so", "_srv.so"), false)
+            let res = self.find_binary(&filename.replace(".so", "_srv.so"), false);
+            if !res.is_empty() {
+                return res;
+            }
         }
 
         for entry in WalkDir::new(&self.download_path)

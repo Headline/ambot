@@ -60,7 +60,7 @@ pub async fn gdc(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     run_gdc(message, Some(&msg.author.tag()), ctx.data.clone(), ctx.http.clone(), log, game).await
 }
 
-async fn build_results_embed(tag : Option<&String>, msg : &mut Message, http : &Arc<Http>, results : &HashMap<String, std::result::Result<bool, GDCError>>, log : & mut Vec<String>) {
+async fn build_results_embed(tag : Option<&String>, msg : &mut Message, http : &Arc<Http>, results : &HashMap<String, std::result::Result<bool, GDCError>>, log : & mut Vec<String>, game : &Game) {
     msg.edit(http, |f| {
         f.embed(|e| {
             for (k, v) in results {
@@ -69,29 +69,35 @@ async fn build_results_embed(tag : Option<&String>, msg : &mut Message, http : &
                 }
             }
 
-            e.title("Gamedata Checker");
             e.color(COLOR_GDC);
             log.push(String::from("Execution completed."));
             e.description(format!("```\n{}\n```", log.join("\n")));
             e.thumbnail(ICON_GDC);
             if let Some(tag) = tag {
+                e.title("Gamedata Checker");
                 e.footer(|f| f.text(format!("Requested by: {}", tag)));
+            }
+            else {
+                e.title(format!("{} update detected", game.name));
             }
             e
         })
     }).await.expect("Unable to edit message.")
 }
 
-async fn update_msg(tag : Option<&String>, msg : &mut Message, http : &Arc<Http>, text : &str, log : & mut Vec<String>) {
+async fn update_msg(tag : Option<&String>, msg : &mut Message, http : &Arc<Http>, text : &str, log : & mut Vec<String>, game : &Game) {
 
     msg.edit(http, |f| f.embed(|e| {
-        e.title("Gamedata Checker");
         log.push(text.to_owned());
         e.description(format!("```\n{}\n```", log.join("\n")));
         e.thumbnail(ICON_GDC);
         e.color(COLOR_GDC);
         if let Some(tag) = tag {
+            e.title("Gamedata Checker");
             e.footer(|f| f.text(format!("Requested by: {}", tag)));
+        }
+        else {
+            e.title(format!("{} update detected", game.name));
         }
         e
     })).await.expect("Unable to edit message.")
@@ -104,7 +110,21 @@ pub async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
         return Ok(())
     }
 
-    let appid = args.single::<i32>()?;
+    let appid;
+    let appid_str = args.single::<String>()?;
+
+    if let Ok(appid_int) = appid_str.parse::<i32>() {
+        appid = appid_int;
+    }
+    else {
+        let man = GameCache::new();
+        if let Some(g) = man.lookup_shortname(&appid_str) {
+            appid = g.appid
+        } else {
+            return Err(CommandError::from(format!("Unable to resolve application \"{}\"", appid_str)));
+        }
+    }
+
     let src_type = args.single::<String>()?;
     let src = args.single::<String>()?;
 
@@ -124,7 +144,7 @@ pub async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
         return Ok(())
     }
 
-
+    msg.reply(&ctx, format!("Added {} to sources list", src)).await?;
     Ok(())
 }
 
@@ -202,29 +222,29 @@ async fn run_gdc(mut message : Message, author : Option<&String>, data : Arc<RwL
         Ok(mut child) => {
             let wait = child.wait();
             if wait.is_err() {
-                update_msg(author, & mut message, &http, &format!("SourceMod pull failed! (git exited with {})", wait.err().unwrap()), & mut log).await
+                update_msg(author, & mut message, &http, &format!("SourceMod pull failed! (git exited with {})", wait.err().unwrap()), & mut log, &game).await
             }
         }
         Err(e) => {
-            update_msg(author, & mut message, &http, &format!("SourceMod pull failed: {}", e), & mut log).await
+            update_msg(author, & mut message, &http, &format!("SourceMod pull failed: {}", e), & mut log, &game).await
         }
     }
 
-    update_msg(author, & mut message, &http, &format!("Downloading appid '{}'", game.appid), & mut log).await;
+    update_msg(author, & mut message, &http, &format!("Downloading appid '{}'", game.appid), & mut log, &game).await;
 
-    let gdc = GDCManager::new(game, sourcemod_dir, downloads_dir, depot_dir);
+    let gdc = GDCManager::new(game.clone(), sourcemod_dir, downloads_dir, depot_dir);
     match gdc.download_game().await {
         Ok(t) => {
             if !t.success() {
-                update_msg(author, & mut message, &http, &format!("Exited with status code {}", t), & mut log).await
+                update_msg(author, & mut message, &http, &format!("Exited with status code {}", t), & mut log, &game).await
             }
         }
         Err(e) => {
-            update_msg(author, & mut message, &http, &format!("Fatal error: {}", e), & mut log).await
+            update_msg(author, & mut message, &http, &format!("Fatal error: {}", e), & mut log, &game).await
         }
     }
 
-    update_msg(author, & mut message, &http, "Download completed. Running gdc...", & mut log).await;
+    update_msg(author, & mut message, &http, "Download completed. Running gdc...", & mut log, &game).await;
     let mut file = OpenOptions::new()
         .write(true) // <--------- this
         .create(true)
@@ -247,7 +267,7 @@ async fn run_gdc(mut message : Message, author : Option<&String>, data : Arc<RwL
     };
     let results = gdc.check_gamedata(& mut file, list).await;
 
-    build_results_embed(author, &mut message, &http, &results, & mut log).await;
+    build_results_embed(author, &mut message, &http, &results, & mut log, &game).await;
     message.channel_id.send_files(&http, vec!["output.log"], |f| {
         f
     }).await?;
@@ -257,7 +277,7 @@ async fn run_gdc(mut message : Message, author : Option<&String>, data : Arc<RwL
 
 pub async fn on_update(data: Arc<RwLock<TypeMap>>, http : Arc<CacheAndHttp>, id : u64, app : App) -> () {
     let cache = GameCache::new();
-    let game = cache.lookup_appid(id as i32).expect("Unknown AppId").clone();
+    let mut game = cache.lookup_appid(id as i32).expect("Unknown AppId").clone();
 
     let mut log = Vec::new();
 
@@ -276,6 +296,7 @@ pub async fn on_update(data: Arc<RwLock<TypeMap>>, http : Arc<CacheAndHttp>, id 
         .await
         .expect("Unable to send msg");
 
+    game.name = app.common.name.clone();
     let _ = run_gdc(message, None, data.clone(), http.http.clone(), log, game).await;
 
 }

@@ -28,12 +28,12 @@ impl GDCManager {
     }
 
     pub async fn download_game(&self) -> Result<ExitStatus, downloader::GDCError> {
-        let dl = downloader::DepotDownloader::new(&self.downloads_dir, self.game);
+        let dl = downloader::DepotDownloader::new(&self.downloads_dir, self.game.clone());
         dl.download(&self.depotdownloader_path).await
     }
 
     pub async fn check_gamedata(&self, output_file : &mut  File, gamedata : Vec<crate::gdcrunner::GameData>) -> HashMap<String, Result<bool, GDCError>> {
-        let runner = gdcrunner::GDCRunner::load(self.game, &self.sourcemod_dir, &self.downloads_dir, gamedata).await;
+        let runner = gdcrunner::GDCRunner::load(self.game.clone(), &self.sourcemod_dir, &self.downloads_dir, gamedata).await;
         runner.run(output_file)
     }
 }

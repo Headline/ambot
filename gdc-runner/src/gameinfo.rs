@@ -1,7 +1,7 @@
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct Game {
     pub appid : i32,
-    pub name : &'static str,
+    pub name : String,
     pub gamedir : &'static str,
     pub engine : &'static str,
 }
@@ -13,10 +13,10 @@ impl GameCache {
     pub fn new() -> GameCache {
         GameCache {
             cache: vec! [
-                Game { appid: 740, name: "csgo", gamedir: "csgo", engine: "csgo" },
-                Game { appid: 232250, name: "tf2", gamedir: "tf", engine: "orangebox_valve" },
-                Game { appid: 232330, name: "css", gamedir: "cstrike", engine: "css" },
-                Game { appid: 222860, name: "l4d2", gamedir: "left4dead2", engine: "left4dead2" },
+                Game { appid: 740, name: String::from("csgo"), gamedir: "csgo", engine: "csgo" },
+                Game { appid: 232250, name: String::from("tf2"), gamedir: "tf", engine: "orangebox_valve" },
+                Game { appid: 232330, name: String::from("css"), gamedir: "cstrike", engine: "css" },
+                Game { appid: 222860, name: String::from("l4d2"), gamedir: "left4dead2", engine: "left4dead2" },
             ]
         }
     }

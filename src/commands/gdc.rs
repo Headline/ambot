@@ -103,16 +103,8 @@ async fn update_msg(tag : Option<&String>, msg : &mut Message, http : &Arc<Http>
     })).await.expect("Unable to edit message.")
 }
 
-#[command]
-pub async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    if args.len() != 3 {
-        msg.reply(&ctx, "Invalid syntax: -gdc add <appid> <url OR path> <source>").await?;
-        return Ok(())
-    }
-
+fn get_appid_from_str(appid_str : String) -> Result<i32, CommandError> {
     let appid;
-    let appid_str = args.single::<String>()?;
-
     if let Ok(appid_int) = appid_str.parse::<i32>() {
         appid = appid_int;
     }
@@ -124,6 +116,18 @@ pub async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
             return Err(CommandError::from(format!("Unable to resolve application \"{}\"", appid_str)));
         }
     }
+    return Ok(appid);
+}
+
+#[command]
+pub async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    if args.len() != 3 {
+        msg.reply(&ctx, "Invalid syntax: -gdc add <appid> <url OR path> <source>").await?;
+        return Ok(())
+    }
+
+    let appid_str = args.single::<String>()?;
+    let appid = get_appid_from_str(appid_str)?;
 
     let src_type = args.single::<String>()?;
     let src = args.single::<String>()?;
@@ -149,13 +153,14 @@ pub async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 }
 
 #[command]
-pub async fn list(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
+pub async fn list(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     if args.len() != 1 {
         msg.reply(&ctx, "Invalid syntax: -gdc list <appid>").await?;
         return Ok(())
     }
 
-    let appid = args.parse::<i32>()?;
+    let appid_str = args.single::<String>()?;
+    let appid = get_appid_from_str(appid_str)?;
 
     let data = ctx.data.read().await;
     let conn = data.get::<Sqlite>().unwrap().lock().await;
@@ -188,7 +193,8 @@ pub async fn remove(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
         return Ok(())
     }
 
-    let appid = args.single::<i32>()?;
+    let appid_str = args.single::<String>()?;
+    let appid = get_appid_from_str(appid_str)?;
     let src = args.single::<String>()?;
 
     let data = ctx.data.read().await;

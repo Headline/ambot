@@ -91,6 +91,10 @@ impl GDCRunner {
         let libpath1 = cwd.join(Path::new(&self.download_path).join(&self.game.gamedir).join("bin")).to_string_lossy().to_string();
         let libpath2 = cwd.join(Path::new(&self.download_path).join("bin")).to_string_lossy().to_string();
 
+        let lin_server_bin = self.find_binary("server.so", true);
+        let win_server_bin = self.find_binary("server.dll", false);
+        let lin_engine_bin = self.find_binary("engine.so", true);
+        let win_engine_bin = self.find_binary("engine.dll", false);
 
         let mut map = HashMap::new();
         for file in &self.gamedata_files {
@@ -103,13 +107,13 @@ impl GDCRunner {
                 .arg("-f")
                 .arg(&file)
                 .arg("-b")
-                .arg(&self.find_binary("server.so", true))
+                .arg(&lin_server_bin)
                 .arg("-w")
-                .arg(&self.find_binary("server.dll", false))
+                .arg(&win_server_bin)
                 .arg("-x")
-                .arg(&self.find_binary("engine.so", true))
+                .arg(&lin_engine_bin)
                 .arg("-y")
-                .arg(&self.find_binary("engine.dll", false))
+                .arg(&win_engine_bin)
                 .arg("-s")
                 .arg(&format!("{}/tools/gdc-psyfork/symbols.txt", &self.sourcemod))
                 .stdout(Stdio::piped())

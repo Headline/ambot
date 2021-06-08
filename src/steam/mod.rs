@@ -58,8 +58,8 @@ pub fn start_polling<F: 'static, Fut>(data: Arc<RwLock<TypeMap>>, http : Arc<Cac
                 let id = k.parse::<u64>().unwrap();
 
                 let mut new_number = 0;
-                if let Some(public_only) = v.public_only {
-                    if public_only == 1 {
+                if let Some(public_only) = &v.public_only {
+                    if public_only.parse::<u64>().unwrap() == 1 {
                         new_number = v.change_number
                     }
                 }

@@ -22,7 +22,7 @@ pub struct Branch {
 #[derive(Clone, Debug, Deserialize, Default)]
 pub struct App {
     pub appid : String,
-    pub public_only : Option<u64>, // if exists and is == 1 then we prob have no depots
+    pub public_only : Option<String>, // if exists and is == 1 then we prob have no depots
     pub change_number : u64,
     pub common : Common,
     pub depots : Option<Depots>, // see public_only

@@ -14,6 +14,7 @@ pub struct Depots {
 
 #[derive(Clone, Debug, Deserialize, Default)]
 pub struct Branch {
+    #[serde(rename = "buildid")]
     pub build_id : String,
     pub description : String
 }

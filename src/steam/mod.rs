@@ -56,7 +56,7 @@ pub fn start_polling<F: 'static, Fut>(data: Arc<RwLock<TypeMap>>, http : Arc<Cac
             let results = response.json::<PicsResponse>().await.unwrap();
             for (k, v) in results.apps {
                 let id = k.parse::<u64>().unwrap();
-                if n.check_update(id, v.change_number) {
+                if n.check_update(id, v.depots.branches["public"].build_id.parse::<u64>().unwrap()) {
                     on_update(data.clone(), http.clone(), id, v).await;
                 }
             }

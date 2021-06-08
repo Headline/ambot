@@ -56,7 +56,22 @@ pub fn start_polling<F: 'static, Fut>(data: Arc<RwLock<TypeMap>>, http : Arc<Cac
             let results = response.json::<PicsResponse>().await.unwrap();
             for (k, v) in results.apps {
                 let id = k.parse::<u64>().unwrap();
-                if n.check_update(id, v.depots.branches["public"].build_id.parse::<u64>().unwrap()) {
+
+                let mut new_number = 0;
+                if let Some(public_only) = v.public_only {
+                    if public_only == 1 {
+                        new_number = v.change_number
+                    }
+                }
+                else if let Some(depots) = &v.depots {
+                    new_number = depots.branches["public"].build_id.parse::<u64>().unwrap()
+                }
+                else {
+                    error!("public_only == 0 & no depots available. Unable to continue for app {}", k);
+                }
+                // neither
+
+                if n.check_update(id, new_number) {
                     on_update(data.clone(), http.clone(), id, v).await;
                 }
             }

@@ -55,7 +55,7 @@ impl GDCRunner {
             sourcemod : sourcemod.to_owned(),
             gdc_location : format!("{}/tools/gdc-psyfork/Release/gdc", sourcemod),
             gamedata_files : vec,
-            download_path : format!("{}/{}", dl_path.to_owned(), game.name),
+            download_path : format!("{}/{}", dl_path.to_owned(), game.appid),
             game
         };
         runner

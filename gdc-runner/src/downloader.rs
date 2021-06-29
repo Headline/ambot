@@ -34,7 +34,7 @@ impl DepotDownloader {
     }
 
     pub fn get_download_path(&self) -> String {
-        Path::new(&self.downloads_dir).join(String::from(&self.game.name)).to_str().unwrap().to_owned()
+        Path::new(&self.downloads_dir).join(String::from(&self.game.appid)).to_str().unwrap().to_owned()
     }
 
     pub async fn download(&self,  depotdownloader_path : &str) -> Result<ExitStatus, GDCError> {

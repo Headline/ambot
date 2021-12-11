@@ -47,15 +47,37 @@ pub fn start_polling<F: 'static, Fut>(data: Arc<RwLock<TypeMap>>, http : Arc<Cac
         let client = reqwest::Client::new();
 
         loop {
+            tokio::time::delay_for(core::time::Duration::new(120, 0)).await;
+
             let apps : Vec<String> = n.get_apps().iter().map(|&id| id.to_string()).collect();
 
             let apps_str = apps.join(",");
             let endpoint = format!("http://127.0.0.1:23455/info?apps={}", apps_str);
 
-            let response = client.get(&endpoint).send().await.unwrap();
-            let results = response.json::<PicsResponse>().await.unwrap();
+            let response = match client.get(&endpoint).send().await {
+                Ok(r) => r,
+                Err(e) => {
+                    error!("{}", e);
+                    continue;
+                }
+            };
+
+            let results = match response.json::<PicsResponse>().await {
+                Ok(r) => r,
+                Err(e) => {
+                    error!("{}", e);
+                    continue;
+                }
+            };
+
             for (k, v) in results.apps {
-                let id = k.parse::<u64>().unwrap();
+                let id = match k.parse::<u64>() {
+                    Ok(id) => id,
+                    Err(e) => {
+                        error!("{}", e);
+                        continue;
+                    }
+                };
 
                 let mut new_number = 0;
                 if let Some(public_only) = &v.public_only {
@@ -75,8 +97,6 @@ pub fn start_polling<F: 'static, Fut>(data: Arc<RwLock<TypeMap>>, http : Arc<Cac
                     on_update(data.clone(), http.clone(), id, v).await;
                 }
             }
-
-            tokio::time::delay_for(core::time::Duration::new(120, 0)).await;
         }
     });
 }

@@ -18,6 +18,7 @@ impl GameCache {
                 Game { appid: 232330, name: String::from("css"), gamedir: "cstrike", engine: "css" },
                 Game { appid: 222860, name: String::from("l4d2"), gamedir: "left4dead2", engine: "left4dead2" },
                 Game { appid: 317670, name: String::from("nmrih"), gamedir: "nmrih", engine: "sdk2013" },
+                Game { appid: 740, name: String::from("cs2"), gamedir: "cs2", engine: "idk" },
             ]
         }
     }

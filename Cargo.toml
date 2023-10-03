@@ -1,16 +1,16 @@
 [package]
 name = "ambot"
 description = "Bot used in the AlliedModders discord server"
-version = "0.1.1"
-authors = ["Michael Flaherty (Headline#9999)"]
+version = "0.1.2"
+authors = ["Michael Flaherty"]
 edition = "2018"
 
 [dependencies]
-tokio = { version = "0.2", features = ["full", "blocking"] }
-reqwest = { version = "0.10" }
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.11", features = ["json"]}
 dotenv = "0.15.0"
 log = "0.4"
-pretty_env_logger = "0.3"
+pretty_env_logger = "0.4"
 serde = { version = "1.0.*", features = ["derive"] }
 quick-xml = { version = "0.20.0", features = ["serialize"] }
 
@@ -21,6 +21,6 @@ features = ["bundled"]
 path = "gdc-runner"
 
 [dependencies.serenity]
-version = "0.9"
+version = "0.11"
 default-features = false
 features = ["collector", "gateway", "builder", "standard_framework", "http", "model", "client", "framework", "utils", "rustls_backend"]

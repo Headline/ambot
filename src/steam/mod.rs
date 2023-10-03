@@ -47,7 +47,7 @@ pub fn start_polling<F: 'static, Fut>(data: Arc<RwLock<TypeMap>>, http : Arc<Cac
         let client = reqwest::Client::new();
 
         loop {
-            tokio::time::delay_for(core::time::Duration::new(120, 0)).await;
+            tokio::time::sleep(core::time::Duration::new(120, 0)).await;
 
             let apps : Vec<String> = n.get_apps().iter().map(|&id| id.to_string()).collect();
 

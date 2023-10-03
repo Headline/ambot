@@ -44,7 +44,7 @@ pub fn start_listening(data: Arc<RwLock<TypeMap>>, http : Arc<Http>) {
                 }
             }
 
-            tokio::time::delay_for(core::time::Duration::new(120, 0)).await;
+            tokio::time::sleep(core::time::Duration::new(120, 0)).await;
         }
     });
 }

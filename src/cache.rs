@@ -1,9 +1,9 @@
 use serenity::prelude::{TypeMap, TypeMapKey};
 use std::collections::HashMap;
 use std::env;
-use std::sync::Arc;
+use std::sync::{Arc};
 
-use serenity::model::id::UserId;
+use serenity::model::id::{ApplicationId};
 use std::error::Error;
 use rusqlite::{Connection, Result};
 
@@ -21,13 +21,14 @@ impl TypeMapKey for Sqlite {
 pub async fn fill(
     data: Arc<tokio::sync::RwLock<TypeMap>>,
     prefix: &str,
-    id: &UserId,
+    id: &ApplicationId,
 ) -> Result<(), Box<dyn Error>> {
     let mut data = data.write().await;
 
     // Lets map some common things in BotInfo
     let mut map = HashMap::<&str, String>::new();
     map.insert("PLUGIN_CHANNEL", env::var("PLUGIN_CHANNEL")?);
+    map.insert("ALLOWED_ROLES", env::var("PLUGIN_CHANNEL")?);
     map.insert("SOURCEMOD_DIR", env::var("SOURCEMOD_DIR")?);
     map.insert("DEPOT_DIR", env::var("DEPOT_DIR")?);
     map.insert("DOWNLOADS_DIR", env::var("DOWNLOADS_DIR")?);

@@ -72,6 +72,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .on_dispatch_error(events::dispatch_error);
 
     let intents = GatewayIntents::GUILDS
+        | GatewayIntents::MESSAGE_CONTENT
         | GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::GUILD_MESSAGE_REACTIONS;
     let mut client = serenity::Client::builder(token, intents)

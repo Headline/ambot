@@ -8,6 +8,8 @@ use std::error::Error;
 use crate::cache::BotInfo;
 use crate::utls::discordhelpers::*;
 use serenity::http::Http;
+use serenity::model::id::ChannelId;
+
 extern crate serde;
 extern crate quick_xml;
 
@@ -66,7 +68,7 @@ async fn notify_on_new(cache : & mut Vec<parser::Item>, new : &Vec<parser::Item>
         else {
             emb = build_sm_embed(x);
         }
-        let _ = manual_dispatch(http.clone(), channel.parse::<u64>().unwrap(), emb).await;
+        let _ = dispatch_embed(http.clone(), ChannelId(channel.parse::<u64>().unwrap()), emb).await;
     }
 }
 

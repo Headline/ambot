@@ -21,7 +21,6 @@ use serenity::CacheAndHttp;
 
 use crate::steam::pics_bindings::*;
 use serenity::http::Http;
-use crate::utls::discordhelpers::manual_dispatch;
 
 #[command]
 #[owners_only]
@@ -52,10 +51,7 @@ pub async fn gdc(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     emb.description(format!("```\n{}\n```", log.join("\n")));
     emb.footer(|f| f.text(format!("Requested by: {}", &msg.author.tag())));
 
-    let mut emb_msg = discordhelpers::embed_message(emb);
-    let message = msg.channel_id
-        .send_message(&ctx.http, |_| &mut emb_msg)
-        .await?;
+    let message = discordhelpers::dispatch_embed(&ctx.http, msg.channel_id, emb).await?;
 
     run_gdc(message, Some(&msg.author.tag()), ctx.data.clone(), ctx.http.clone(), log, game).await
 }
@@ -137,7 +133,7 @@ pub async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 
     if src_type == "url" {
         conn.execute("INSERT INTO gamedata (appid, url, path) VALUES (?1, ?2, ?3)",
-        params![appid, src, ""])?;
+                     params![appid, src, ""])?;
     }
     else if src_type == "path" {
         conn.execute("INSERT INTO gamedata (appid, url, path) VALUES (?1, ?2, ?3)",
@@ -297,11 +293,8 @@ pub async fn on_update(data: Arc<RwLock<TypeMap>>, http : Arc<CacheAndHttp>, id 
     let data_lock = data.read().await;
     let bot_info = data_lock.get::<BotInfo>().unwrap().read().await;
     let channel = bot_info.get("PLUGIN_CHANNEL").unwrap();
-
-    let message = manual_dispatch(http.http.clone(), channel.parse::<u64>().unwrap(), emb)
-        .await
-        .expect("Unable to send msg");
-
+    let id = serenity::model::id::ChannelId(channel.parse::<u64>().unwrap());
+    let message = discordhelpers::dispatch_embed(&http.http, id, emb).await.unwrap();
     game.name = app.common.name.clone();
     let _ = run_gdc(message, None, data.clone(), http.http.clone(), log, game).await;
 

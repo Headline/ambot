@@ -1,5 +1,4 @@
 use std::str;
-use std::sync::Arc;
 
 use serenity::{
     builder::{CreateEmbed, CreateMessage},
@@ -9,21 +8,19 @@ use serenity::{
 
 use crate::utls::constants::*;
 use crate::parser;
-use serenity::prelude::SerenityError;
 
-pub async fn manual_dispatch(http: Arc<Http>, id: u64, emb: CreateEmbed) -> Result<Message, SerenityError> {
-    return match serenity::model::id::ChannelId(id)
-        .send_message(&http, |m| {
-            m.embed(|mut e| {
-                e.0 = emb.0;
-                e
-            })
+pub async fn dispatch_embed(
+    http: impl AsRef<Http>,
+    channel: ChannelId,
+    emb: CreateEmbed,
+) -> serenity::Result<Message> {
+    let emb_msg = embed_message(emb);
+    channel
+        .send_message(http, |e| {
+            *e = emb_msg;
+            e
         })
         .await
-    {
-        Ok(m) => Ok(m),
-        Err(e) => Err(e),
-    };
 }
 
 pub fn embed_message(emb: CreateEmbed) -> CreateMessage<'static> {

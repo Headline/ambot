@@ -61,6 +61,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .join(", ")
     );
 
+    let app_id = env::var("APPLICATION_ID").expect("Expected application id in .env file");
     let prefix = env::var("BOT_PREFIX")?;
     let framework = StandardFramework::new()
         .configure(|c| c.owners(owners).prefix(&prefix))
@@ -78,6 +79,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut client = serenity::Client::builder(token, intents)
         .framework(framework)
         .event_handler(events::Handler)
+        .application_id(app_id.parse::<u64>().unwrap())
         .await?;
 
     cache::fill(client.data.clone(), &prefix, &bot_id).await?;

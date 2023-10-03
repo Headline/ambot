@@ -34,10 +34,7 @@ pub async fn help(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 
         emb.description(description);
 
-        let mut emb_msg = discordhelpers::embed_message(emb);
-        msg.channel_id
-            .send_message(&ctx.http, |_| &mut emb_msg)
-            .await?;
+        discordhelpers::dispatch_embed(&ctx.http, msg.channel_id, emb).await?;
 
         return Ok(());
     }

@@ -37,18 +37,15 @@ pub async fn before(_: &Context, _: &Message, _: &str) -> bool {
 }
 
 #[hook]
-pub async fn after(ctx : &Context, msg: &Message, _: &str, command_result: CommandResult) {
+pub async fn after(
+    ctx: &Context,
+    msg: &Message,
+    _: &str,
+    command_result: CommandResult,
+) {
     if let Err(e) = command_result {
         let emb = discordhelpers::build_fail_embed(&msg.author, &format!("{}", e));
-        let mut emb_msg = discordhelpers::embed_message(emb);
-        if msg
-            .channel_id
-            .send_message(&ctx.http, |_| &mut emb_msg)
-            .await
-            .is_err()
-        {
-            // missing permissions, just ignore...
-        }
+        let _ = discordhelpers::dispatch_embed(&ctx.http, msg.channel_id, emb).await;
     }
 }
 

@@ -13,4 +13,4 @@ path = "src/lib.rs"
 tokio = { version = "1.0.0", features = ["full"] }
 clap = "3.0.0-beta.2"
 walkdir = "2.3"
-reqwest = { version = "0.10" }
+reqwest = { version = "0.12" }

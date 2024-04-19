@@ -7,13 +7,14 @@ use serenity::{
 
 use crate::utls::constants::*;
 use crate::utls::discordhelpers;
+use crate::utls::discordhelpers::dispatch_embed;
 
 #[command]
 pub async fn help(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     if !args.is_empty() {
         let cmd = args.parse::<String>().unwrap();
-        let mut emb = CreateEmbed::default();
-        emb.thumbnail(ICON_HELP);
+        let mut emb = CreateEmbed::default()
+            .thumbnail(ICON_HELP);
 
         let unknown = format!("Unknown command '{}'", cmd);
         let description = match cmd.as_str() {
@@ -25,31 +26,27 @@ pub async fn help(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 //                "Grabs the bot's invite link\n\n"
 //            }
             _ => {
-                emb.title("Command not found");
-                emb.color(COLOR_FAIL);
-                emb.thumbnail(ICON_FAIL);
+                emb = emb.title("Command not found")
+                    .color(COLOR_FAIL)
+                    .thumbnail(ICON_FAIL);
                 unknown.as_str()
             }
         };
 
-        emb.description(description);
+        emb = emb.description(description);
 
         discordhelpers::dispatch_embed(&ctx.http, msg.channel_id, emb).await?;
 
         return Ok(());
     }
 
-    msg.channel_id.send_message(&ctx.http, |m| {
-        m.embed(|e| {
-            e.thumbnail(ICON_HELP);
-            e.description("I currently have no commands, add one! ");
-            e.color(COLOR_OKAY);
-            e.title("Commands");
-// example
-//            e.field("invite", "``` Grabs the bot's invite link ```", false);
-            e
-        })
-    }).await?;
+    let embed = CreateEmbed::new()
+        .thumbnail(ICON_HELP)
+        .description("I currently have no commands, add one! ")
+        .color(COLOR_OKAY)
+        .title("Commands");
+
+    dispatch_embed(&ctx.http, msg.channel_id, embed).await?;
 
     debug!("Command executed");
     Ok(())

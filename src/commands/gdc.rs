@@ -17,7 +17,7 @@ use std::process::{Command, Stdio};
 use rusqlite::params;
 use gdcrunner::gdcrunner::GameData;
 use std::sync::Arc;
-use serenity::CacheAndHttp;
+use serenity::all::{CreateAttachment, CreateEmbedFooter, CreateMessage, EditMessage};
 
 use crate::steam::pics_bindings::*;
 use serenity::http::Http;
@@ -42,61 +42,68 @@ pub async fn gdc(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     }
     let game = game_option.unwrap().clone();
     let mut log = Vec::new();
-
-    let mut emb = CreateEmbed::default();
-    emb.title("Gamedata Checker");
-    emb.thumbnail(ICON_GDC);
-    emb.color(COLOR_GDC);
     log.push(String::from("Pulling latest sourcemod..."));
-    emb.description(format!("```\n{}\n```", log.join("\n")));
-    emb.footer(|f| f.text(format!("Requested by: {}", &msg.author.tag())));
+
+    let footer = CreateEmbedFooter::new(format!("Requested by: {}", msg.author.name));
+    let emb = CreateEmbed::default()
+        .title("Gamedata Checker")
+        .thumbnail(ICON_GDC)
+        .color(COLOR_GDC)
+        .description(format!("```\n{}\n```", log.join("\n")))
+        .footer(footer);
 
     let message = discordhelpers::dispatch_embed(&ctx.http, msg.channel_id, emb).await?;
 
-    run_gdc(message, Some(&msg.author.tag()), ctx.data.clone(), ctx.http.clone(), log, game).await
+    run_gdc(message, Some(&msg.author.tag()), ctx.data.clone(), &ctx.http, log, game).await
 }
 
-async fn build_results_embed(tag : Option<&String>, msg : &mut Message, http : &Arc<Http>, results : &HashMap<String, std::result::Result<bool, GDCError>>, log : & mut Vec<String>, game : &Game) {
-    msg.edit(http, |f| {
-        f.embed(|e| {
-            for (k, v) in results {
-                if v.is_err() {
-                    e.field(k, format!("```\n{}\n```", v.as_ref().err().unwrap()), false);
-                }
-            }
+async fn build_results_embed(tag : Option<&String>, msg : &mut Message, http : &Http, results : &HashMap<String, std::result::Result<bool, GDCError>>, log : & mut Vec<String>, game : &Game) {
+    log.push(String::from("Execution completed."));
 
-            e.color(COLOR_GDC);
-            log.push(String::from("Execution completed."));
-            e.description(format!("```\n{}\n```", log.join("\n")));
-            e.thumbnail(ICON_GDC);
-            if let Some(tag) = tag {
-                e.title("Gamedata Checker");
-                e.footer(|f| f.text(format!("Requested by: {}", tag)));
-            }
-            else {
-                e.title(format!("{} update detected", game.name));
-            }
-            e
-        })
-    }).await.expect("Unable to edit message.")
+    let mut e = CreateEmbed::new();
+    for (k, v) in results {
+        if v.is_err() {
+            e = e.field(k, format!("```\n{}\n```", v.as_ref().err().unwrap()), false);
+        }
+    }
+
+    e = e.color(COLOR_GDC)
+        .description(format!("```\n{}\n```", log.join("\n")))
+        .thumbnail(ICON_GDC);
+    if let Some(tag) = tag {
+        let footer = CreateEmbedFooter::new(format!("Requested by: {}", tag));
+        e = e.title("Gamedata Checker")
+            .footer(footer);
+    }
+    else {
+        e = e.title(format!("{} update detected", game.name));
+    }
+
+    let message = EditMessage::new().embed(e);
+    msg.edit(http, message).await.expect("Unable to edit message.")
 }
 
-async fn update_msg(tag : Option<&String>, msg : &mut Message, http : &Arc<Http>, text : &str, log : & mut Vec<String>, game : &Game) {
+async fn update_msg(tag : Option<&String>, msg : &mut Message, http : &Http, text : &str, log : & mut Vec<String>, game : &Game) {
+    log.push(text.to_owned());
 
-    msg.edit(http, |f| f.embed(|e| {
-        log.push(text.to_owned());
-        e.description(format!("```\n{}\n```", log.join("\n")));
-        e.thumbnail(ICON_GDC);
-        e.color(COLOR_GDC);
-        if let Some(tag) = tag {
-            e.title("Gamedata Checker");
-            e.footer(|f| f.text(format!("Requested by: {}", tag)));
-        }
-        else {
-            e.title(format!("{} update detected", game.name));
-        }
-        e
-    })).await.expect("Unable to edit message.")
+    let mut e = CreateEmbed::new();
+
+    e = e.description(format!("```\n{}\n```", log.join("\n")))
+        .thumbnail(ICON_GDC)
+        .color(COLOR_GDC);
+    if let Some(tag) = tag {
+        let footer = CreateEmbedFooter::new(format!("Requested by: {}", tag));
+        e = e.title("Gamedata Checker")
+            .footer(footer);
+    }
+    else {
+        e = e.title(format!("{} update detected", game.name));
+    }
+
+
+    let message = EditMessage::new().embed(e);
+    msg.edit(http, message).await.expect("Unable to edit message.")
+
 }
 
 fn get_appid_from_str(appid_str : String) -> Result<i32, CommandError> {
@@ -204,7 +211,7 @@ pub async fn remove(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
     Ok(())
 }
 
-async fn run_gdc(mut message : Message, author : Option<&String>, data : Arc<RwLock<TypeMap>>, http: Arc<Http>, mut log : Vec<String>, game : Game) -> CommandResult {
+async fn run_gdc(mut message : Message, author : Option<&String>, data : Arc<RwLock<TypeMap>>, http: &Http, mut log : Vec<String>, game : Game) -> CommandResult {
     let data = data.read().await;
     let info = data.get::<BotInfo>().unwrap().read().await;
 
@@ -270,32 +277,35 @@ async fn run_gdc(mut message : Message, author : Option<&String>, data : Arc<RwL
     let results = gdc.check_gamedata(& mut file, list).await;
 
     build_results_embed(author, &mut message, &http, &results, & mut log, &game).await;
-    message.channel_id.send_files(&http, vec!["output.log"], |f| {
-        f
-    }).await?;
+
+    let msg= CreateMessage::new();
+    let files = [
+        CreateAttachment::path("output.log").await?,
+    ];
+    message.channel_id.send_files(&http, files, msg).await?;
     std::fs::remove_file("output.log")?;
     Ok(())
 }
 
-pub async fn on_update(data: Arc<RwLock<TypeMap>>, http : Arc<CacheAndHttp>, id : u64, app : App) -> () {
+pub async fn on_update(data: Arc<RwLock<TypeMap>>, http : Arc<Http>, id : u64, app : App) -> () {
     let cache = GameCache::new();
     let mut game = cache.lookup_appid(id as i32).expect("Unknown AppId").clone();
 
     let mut log = Vec::new();
-
-    let mut emb = CreateEmbed::default();
-    emb.title(format!("{} update detected", app.common.name));
-    emb.thumbnail(ICON_GDC);
-    emb.color(COLOR_GDC);
     log.push(String::from("Pulling latest sourcemod..."));
-    emb.description(format!("```\n{}\n```", log.join("\n")));
+
+    let emb = CreateEmbed::default()
+        .title(format!("{} update detected", app.common.name))
+        .thumbnail(ICON_GDC)
+        .color(COLOR_GDC)
+        .description(format!("```\n{}\n```", log.join("\n")));
 
     let data_lock = data.read().await;
     let bot_info = data_lock.get::<BotInfo>().unwrap().read().await;
     let channel = bot_info.get("PLUGIN_CHANNEL").unwrap();
-    let id = serenity::model::id::ChannelId(channel.parse::<u64>().unwrap());
-    let message = discordhelpers::dispatch_embed(&http.http, id, emb).await.unwrap();
+    let id = ChannelId::new(channel.parse::<u64>().unwrap());
+    let message = discordhelpers::dispatch_embed(&http, id, emb).await.unwrap();
     game.name = app.common.name.clone();
-    let _ = run_gdc(message, None, data.clone(), http.http.clone(), log, game).await;
+    let _ = run_gdc(message, None, data.clone(), &http, log, game).await;
 
 }

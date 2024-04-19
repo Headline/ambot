@@ -15,8 +15,6 @@ extern crate quick_xml;
 
 pub fn start_listening(data: Arc<RwLock<TypeMap>>, http : Arc<Http>) {
     tokio::spawn(async move {
-        let http = http.clone();
-
         let mut amx_cache : Vec<parser::Item> = Vec::new();
         let mut sm_cache : Vec<parser::Item> = Vec::new();
         loop {
@@ -31,7 +29,7 @@ pub fn start_listening(data: Arc<RwLock<TypeMap>>, http : Arc<Http>) {
                 if amx_cache.is_empty() {
                     amx_cache = data.channel.items;
                 } else {
-                    notify_on_new(& mut amx_cache, &data.channel.items, channel, true, http.clone()).await
+                    notify_on_new(& mut amx_cache, &data.channel.items, channel, true, &http).await
                 }
             }
 
@@ -42,7 +40,7 @@ pub fn start_listening(data: Arc<RwLock<TypeMap>>, http : Arc<Http>) {
                 if sm_cache.is_empty() {
                     sm_cache = data.channel.items;
                 } else {
-                    notify_on_new(& mut sm_cache, &data.channel.items, channel, false, http.clone()).await;
+                    notify_on_new(& mut sm_cache, &data.channel.items, channel, false, &http).await;
                 }
             }
 
@@ -52,7 +50,7 @@ pub fn start_listening(data: Arc<RwLock<TypeMap>>, http : Arc<Http>) {
 }
 
 
-async fn notify_on_new(cache : & mut Vec<parser::Item>, new : &Vec<parser::Item>, channel : &str, amx : bool, http : Arc<Http>) {
+async fn notify_on_new(cache : & mut Vec<parser::Item>, new : &Vec<parser::Item>, channel : &str, amx : bool, http : &Http) {
     let new_entries : Vec<parser::Item> = new.iter().filter(|&x| !cache.contains(x)).cloned().collect();
     if new_entries.len() == 0 {
        return;
@@ -68,7 +66,7 @@ async fn notify_on_new(cache : & mut Vec<parser::Item>, new : &Vec<parser::Item>
         else {
             emb = build_sm_embed(x);
         }
-        let _ = dispatch_embed(http.clone(), ChannelId(channel.parse::<u64>().unwrap()), emb).await;
+        let _ = dispatch_embed(http, ChannelId::new(channel.parse::<u64>().unwrap()), emb).await;
     }
 }
 

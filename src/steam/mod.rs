@@ -6,8 +6,8 @@ use std::future::Future;
 use std::sync::Arc;
 use serenity::prelude::TypeMap;
 use tokio::sync::RwLock;
-use serenity::CacheAndHttp;
 use gdcrunner::gameinfo::GameCache;
+use serenity::http::Http;
 
 pub struct GameVersionManager {
     cache : GameCache,
@@ -37,9 +37,9 @@ impl GameVersionManager {
     }
 }
 
-pub fn start_polling<F: 'static, Fut>(data: Arc<RwLock<TypeMap>>, http : Arc<CacheAndHttp>, on_update: F)
+pub fn start_polling<F: 'static, Fut>(data: Arc<RwLock<TypeMap>>, http : Arc<Http>, on_update: F)
     where
-        F: Fn(Arc<RwLock<TypeMap>>, Arc<CacheAndHttp>, u64, App) -> Fut + Send + Sync,
+        F: Fn(Arc<RwLock<TypeMap>>, Arc<Http>, u64, App) -> Fut + Send + Sync,
         Fut: Future<Output = ()> + Send,
 {
     tokio::spawn(async move {

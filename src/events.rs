@@ -6,18 +6,18 @@ use serenity::{async_trait, framework::{standard::macros::hook, standard::Comman
     prelude::UnavailableGuild,
 }, prelude::*};
 
-use crate::utls::discordhelpers;
 use serenity::framework::standard::DispatchError;
+use crate::utls::discordhelpers::{build_fail_embed, dispatch_embed};
 
 pub struct Handler; // event handler for serenity
 
 
 #[async_trait]
 impl EventHandler for Handler {
-    async fn guild_create(&self, _: Context, _: Guild) {
+    async fn guild_create(&self, _: Context, _: Guild, _: Option<bool>) {
     }
 
-    async fn guild_delete(&self, _: Context, _: UnavailableGuild) {
+    async fn guild_delete(&self, _: Context, _: UnavailableGuild, _: Option<Guild>) {
     }
     async fn message(&self, _: Context, _: Message) {
     }
@@ -44,22 +44,15 @@ pub async fn after(
     command_result: CommandResult,
 ) {
     if let Err(e) = command_result {
-        let emb = discordhelpers::build_fail_embed(&msg.author, &format!("{}", e));
-        let _ = discordhelpers::dispatch_embed(&ctx.http, msg.channel_id, emb).await;
+        let emb = build_fail_embed(&msg.author, &format!("{}", e));
+        let _ = dispatch_embed(&ctx.http, msg.channel_id, emb).await;
     }
 }
 
 #[hook]
 pub async fn dispatch_error(ctx: &Context, msg: &Message, error: DispatchError, _: &str) {
     if let DispatchError::Ratelimited(_) = error {
-        let emb =
-            discordhelpers::build_fail_embed(&msg.author, "You are sending requests too fast!");
-        let mut emb_msg = discordhelpers::embed_message(emb);
-        if msg
-            .channel_id
-            .send_message(&ctx.http, |_| &mut emb_msg)
-            .await
-            .is_err()
-        {}
+        let emb = build_fail_embed(&msg.author, "You are sending requests too fast!");
+        let _ = dispatch_embed(&ctx.http, msg.channel_id, emb).await;
     }
 }
